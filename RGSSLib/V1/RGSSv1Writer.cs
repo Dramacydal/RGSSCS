@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace RGSSLibCS.V1;
+namespace RGSSLib.V1;
 
 public class RGSSv1Writer : AbstractArchiveWriter
 {

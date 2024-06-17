@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace RGSSLibCS;
+namespace RGSSLib;
 
 public class FileTable : IEnumerable<TableEntry>
 {

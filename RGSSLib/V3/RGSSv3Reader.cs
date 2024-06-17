@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace RGSSLibCS.V3;
+namespace RGSSLib.V3;
 
 public class RGSSv3Reader : AbstractArchiveReader
 {

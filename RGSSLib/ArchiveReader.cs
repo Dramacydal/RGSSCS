@@ -1,8 +1,8 @@
 ﻿using System.Text;
-using RGSSLibCS.V1;
-using RGSSLibCS.V3;
+using RGSSLib.V1;
+using RGSSLib.V3;
 
-namespace RGSSLibCS;
+namespace RGSSLib;
 
 public abstract class ArchiveReader
 {

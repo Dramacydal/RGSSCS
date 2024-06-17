@@ -1,7 +1,7 @@
-﻿using RGSSLibCS.V1;
-using RGSSLibCS.V3;
+﻿using RGSSLib.V1;
+using RGSSLib.V3;
 
-namespace RGSSLibCS;
+namespace RGSSLib;
 
 public abstract class ArchiveWriter
 {
@@ -12,7 +12,7 @@ public abstract class ArchiveWriter
             throw new Exception($"Output directory '{outDir}' does not exist");
 
         using var writer = new BinaryWriter(File.Create(outFile));
-        
+
         AbstractArchiveWriter aw;
         switch (version)
         {
@@ -25,7 +25,7 @@ public abstract class ArchiveWriter
             default:
                 throw new Exception($"Unknown archive version {version}");
         }
-        
+
         aw.EncryptDirectory(directory);
     }
 }

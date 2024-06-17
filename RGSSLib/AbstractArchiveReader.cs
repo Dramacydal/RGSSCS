@@ -1,4 +1,4 @@
-﻿namespace RGSSLibCS;
+﻿namespace RGSSLib;
 
 public abstract class AbstractArchiveReader
 {

@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RGSSLibCS", "RGSSLibCS\RGSSLibCS.csproj", "{0B797031-1480-4564-8550-48C9A1D5F1A1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RGSSLib", "RGSSLib\RGSSLib.csproj", "{0B797031-1480-4564-8550-48C9A1D5F1A1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
