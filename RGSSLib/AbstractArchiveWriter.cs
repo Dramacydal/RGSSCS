@@ -13,7 +13,7 @@ public abstract class AbstractArchiveWriter
         _version = version;
     }
 
-    public void EncryptDirectory(string path)
+    public int EncryptDirectory(string path)
     {
         if (!Directory.Exists(path))
             throw new Exception($"Source path '{path}' does not exist");
@@ -25,6 +25,8 @@ public abstract class AbstractArchiveWriter
         var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories);
 
         EncryptFiles(files, path);
+
+        return files.Length;
     }
 
     protected abstract void EncryptFiles(IEnumerable<string> files, string basePath);

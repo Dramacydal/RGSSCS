@@ -6,6 +6,8 @@ public class FileTable : IEnumerable<TableEntry>
 {
     private readonly Dictionary<string, TableEntry> _entries = new();
 
+    public int Size => _entries.Count;
+    
     public bool HasEntry(string path) => _entries.ContainsKey(path.ToLowerInvariant());
 
     public void Add(TableEntry entry)

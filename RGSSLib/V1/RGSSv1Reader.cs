@@ -6,7 +6,7 @@ public class RGSSv1Reader : AbstractArchiveReader
 {
     private const uint KeyMagic = 0xDEADCAFE;
         
-    public RGSSv1Reader(BinaryReader reader) : base(reader)
+    public RGSSv1Reader(BinaryReader reader) : base(reader, ArchiveVersion.V1)
     {
     }
     

@@ -5,7 +5,7 @@ namespace RGSSLib;
 
 public abstract class ArchiveWriter
 {
-    public static void Encrypt(string directory, string outFile, ArchiveVersion version)
+    public static int Encrypt(string directory, string outFile, ArchiveVersion version)
     {
         var outDir = Path.GetDirectoryName(outFile);
         if (!string.IsNullOrEmpty(outDir) && !Directory.Exists(outDir))
@@ -26,6 +26,6 @@ public abstract class ArchiveWriter
                 throw new Exception($"Unknown archive version {version}");
         }
 
-        aw.EncryptDirectory(directory);
+        return aw.EncryptDirectory(directory);
     }
 }

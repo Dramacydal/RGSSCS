@@ -1,8 +1,8 @@
-# RGSSLib
+# RGSSLibCS
 
 ---
 
-Provides a library that can be used to decrypt files from RPG Maker archives and vice versa.
+Provides a [library](RGSSLib%2FREADME.md) and a [cli tool](RGSSCli%2FREADME.md) to work with RPG Maker archives
 
 Following versions supported:
 - File format 1 version:

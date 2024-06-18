@@ -4,7 +4,7 @@ namespace RGSSLib.V3;
 
 public class RGSSv3Reader : AbstractArchiveReader
 {
-    public RGSSv3Reader(BinaryReader reader) : base(reader)
+    public RGSSv3Reader(BinaryReader reader) : base(reader, ArchiveVersion.V3)
     {
     }
 

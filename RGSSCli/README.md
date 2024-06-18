@@ -1,8 +1,11 @@
-# RGSSLib
+# RGSSCli
 
 ---
 
-Provides a library that can be used to decrypt files from RPG Maker archives and vice versa.
+Provides a tool to work with RPG Maker archives:
+- list files inside archive
+- extract files from archive
+- create archive from directory
 
 Following versions supported:
 - File format 1 version:

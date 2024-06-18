@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RGSSLib", "RGSSLib\RGSSLib.csproj", "{0B797031-1480-4564-8550-48C9A1D5F1A1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RGSSCli", "RGSSCli\RGSSCli.csproj", "{40623B8E-A180-4FD7-AA26-14028355C0CC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{0B797031-1480-4564-8550-48C9A1D5F1A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0B797031-1480-4564-8550-48C9A1D5F1A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0B797031-1480-4564-8550-48C9A1D5F1A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{40623B8E-A180-4FD7-AA26-14028355C0CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40623B8E-A180-4FD7-AA26-14028355C0CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40623B8E-A180-4FD7-AA26-14028355C0CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40623B8E-A180-4FD7-AA26-14028355C0CC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

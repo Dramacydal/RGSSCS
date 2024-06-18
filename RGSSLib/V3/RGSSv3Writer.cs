@@ -4,8 +4,6 @@ namespace RGSSLib.V3;
 
 public class RGSSv3Writer : AbstractArchiveWriter
 {
-    private readonly Random _rand;
-
     public RGSSv3Writer(BinaryWriter writer) : base(writer, ArchiveVersion.V3)
     {
     }

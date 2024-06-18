@@ -6,7 +6,14 @@ namespace RGSSLib;
 
 public abstract class ArchiveReader
 {
-    public static AbstractArchiveReader Decrypt(BinaryReader reader)
+    public static AbstractArchiveReader Open(string path)
+    {
+        var reader = new BinaryReader(File.OpenRead(path));
+
+        return Open(reader);
+    }
+
+    public static AbstractArchiveReader Open(BinaryReader reader)
     {
         var headerMagic = reader.ReadBytes(6);
         if (Encoding.ASCII.GetString(headerMagic) != HeaderMagic)

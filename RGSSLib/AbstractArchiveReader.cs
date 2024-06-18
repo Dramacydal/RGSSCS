@@ -1,14 +1,16 @@
 ﻿namespace RGSSLib;
 
-public abstract class AbstractArchiveReader
+public abstract class AbstractArchiveReader : IDisposable
 {
     protected readonly BinaryReader reader;
-    private readonly FileTable _table;
+    public FileTable Table { get; init; }
+    public ArchiveVersion Version { get; init; }
 
-    protected AbstractArchiveReader(BinaryReader reader)
+    protected AbstractArchiveReader(BinaryReader reader, ArchiveVersion version)
     {
         this.reader = reader;
-        _table = ReadTable();
+        Version = version;
+        Table = ReadTable();
     }
 
     protected abstract string ReadString(ref uint u);
@@ -27,9 +29,9 @@ public abstract class AbstractArchiveReader
         key = key * 7 + 3;
     }
 
-    public byte[] GetFileContent(string path)
+    public IEnumerable<byte> GetFileContent(string path)
     {
-        var entry = _table.GetEntry(path);
+        var entry = Table.GetEntry(path);
 
         if (entry == null)
             return Array.Empty<byte>();
@@ -37,38 +39,34 @@ public abstract class AbstractArchiveReader
         return GetFileContent(entry);
     }
 
-    public byte[] GetFileContent(TableEntry entry)
+    public IEnumerable<byte> GetFileContent(TableEntry entry)
     {
         reader.BaseStream.Seek(entry.Offset, SeekOrigin.Begin);
 
-        var bytes = reader.ReadBytes(entry.Size);
-
         var key = entry.Key;
 
-        for (var i = 0; i < bytes.Length; ++i)
+        for (var i = 0; i < entry.Size; ++i)
         {
             if ((i % 4) == 0 && i != 0)
                 RotateKey(ref key);
 
-            bytes[i] ^= (byte)((key >> 8 * (i % 4)) & 0xFF);
+            yield return (byte)(reader.ReadByte() ^ (byte)((key >> 8 * (i % 4)) & 0xFF));
         }
-
-        return bytes;
     }
 
     public Stream GetFileStream(string path)
     {
-        return new MemoryStream(GetFileContent(path));
+        return new MemoryStream(GetFileContent(path).ToArray());
     }
-    
+
     public Stream GetFileStream(TableEntry entry)
     {
-        return new MemoryStream(GetFileContent(entry));
+        return new MemoryStream(GetFileContent(entry).ToArray());
     }
 
     public void ExtractAll(string path)
     {
-        foreach (var entry in _table)
+        foreach (var entry in Table)
             Extract(entry, path);
     }
 
@@ -77,8 +75,6 @@ public abstract class AbstractArchiveReader
         if (!Directory.Exists(path))
             throw new Exception($"Directory {path} does not exist");
 
-        var bytes = GetFileContent(entry);
-
         var directory = Path.GetDirectoryName(entry.Path);
         if (!string.IsNullOrEmpty(directory))
             path = Path.Combine(path, directory);
@@ -86,6 +82,11 @@ public abstract class AbstractArchiveReader
         if (!Directory.Exists(path))
             Directory.CreateDirectory(path);
 
-        File.WriteAllBytes(Path.Combine(path, Path.GetFileName(entry.Path)), bytes);
+        File.WriteAllBytes(Path.Combine(path, Path.GetFileName(entry.Path)), GetFileContent(entry).ToArray());
+    }
+
+    public void Dispose()
+    {
+        reader.Dispose();
     }
 }
