@@ -33,8 +33,8 @@ partial class Form1
         fileToolStripMenuItem = new ToolStripMenuItem();
         openToolStripMenuItem = new ToolStripMenuItem();
         createArchiveToolStripMenuItem = new ToolStripMenuItem();
-        v1ToolStripMenuItem = new ToolStripMenuItem();
         v3ToolStripMenuItem = new ToolStripMenuItem();
+        v1ToolStripMenuItem = new ToolStripMenuItem();
         closeToolStripMenuItem = new ToolStripMenuItem();
         exitToolStripMenuItem = new ToolStripMenuItem();
         extractAllToolStripMenuItem = new ToolStripMenuItem();
@@ -42,6 +42,7 @@ partial class Form1
         statusStrip1 = new StatusStrip();
         toolStripStatusLabel1 = new ToolStripStatusLabel();
         splitContainer1 = new SplitContainer();
+        button1 = new Button();
         textBox1 = new TextBox();
         treeView1 = new TreeView();
         contextMenuStrip1 = new ContextMenuStrip(components);
@@ -91,7 +92,7 @@ partial class Form1
         // openToolStripMenuItem
         // 
         openToolStripMenuItem.Name = "openToolStripMenuItem";
-        openToolStripMenuItem.Size = new Size(180, 22);
+        openToolStripMenuItem.Size = new Size(149, 22);
         openToolStripMenuItem.Text = "Open archive";
         openToolStripMenuItem.Click += openToolStripMenuItem_Click;
         // 
@@ -99,35 +100,35 @@ partial class Form1
         // 
         createArchiveToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { v3ToolStripMenuItem, v1ToolStripMenuItem });
         createArchiveToolStripMenuItem.Name = "createArchiveToolStripMenuItem";
-        createArchiveToolStripMenuItem.Size = new Size(180, 22);
+        createArchiveToolStripMenuItem.Size = new Size(149, 22);
         createArchiveToolStripMenuItem.Text = "Create archive";
-        // 
-        // v1ToolStripMenuItem
-        // 
-        v1ToolStripMenuItem.Name = "v1ToolStripMenuItem";
-        v1ToolStripMenuItem.Size = new Size(180, 22);
-        v1ToolStripMenuItem.Text = "V1";
-        v1ToolStripMenuItem.Click += v1ToolStripMenuItem_Click;
         // 
         // v3ToolStripMenuItem
         // 
         v3ToolStripMenuItem.Name = "v3ToolStripMenuItem";
-        v3ToolStripMenuItem.Size = new Size(180, 22);
+        v3ToolStripMenuItem.Size = new Size(87, 22);
         v3ToolStripMenuItem.Text = "V3";
         v3ToolStripMenuItem.Click += v3ToolStripMenuItem_Click;
+        // 
+        // v1ToolStripMenuItem
+        // 
+        v1ToolStripMenuItem.Name = "v1ToolStripMenuItem";
+        v1ToolStripMenuItem.Size = new Size(87, 22);
+        v1ToolStripMenuItem.Text = "V1";
+        v1ToolStripMenuItem.Click += v1ToolStripMenuItem_Click;
         // 
         // closeToolStripMenuItem
         // 
         closeToolStripMenuItem.Enabled = false;
         closeToolStripMenuItem.Name = "closeToolStripMenuItem";
-        closeToolStripMenuItem.Size = new Size(180, 22);
+        closeToolStripMenuItem.Size = new Size(149, 22);
         closeToolStripMenuItem.Text = "Close archive";
         closeToolStripMenuItem.Click += closeToolStripMenuItem_Click;
         // 
         // exitToolStripMenuItem
         // 
         exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-        exitToolStripMenuItem.Size = new Size(180, 22);
+        exitToolStripMenuItem.Size = new Size(149, 22);
         exitToolStripMenuItem.Text = "Exit";
         exitToolStripMenuItem.Click += exitToolStripMenuItem_Click;
         // 
@@ -144,6 +145,7 @@ partial class Form1
         aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
         aboutToolStripMenuItem.Size = new Size(52, 20);
         aboutToolStripMenuItem.Text = "About";
+        aboutToolStripMenuItem.Click += aboutToolStripMenuItem_Click;
         // 
         // statusStrip1
         // 
@@ -168,6 +170,7 @@ partial class Form1
         // 
         // splitContainer1.Panel1
         // 
+        splitContainer1.Panel1.Controls.Add(button1);
         splitContainer1.Panel1.Controls.Add(textBox1);
         splitContainer1.Panel1.Controls.Add(treeView1);
         // 
@@ -178,13 +181,24 @@ partial class Form1
         splitContainer1.SplitterDistance = 261;
         splitContainer1.TabIndex = 2;
         // 
+        // button1
+        // 
+        button1.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+        button1.Location = new Point(216, 508);
+        button1.Name = "button1";
+        button1.Size = new Size(42, 23);
+        button1.TabIndex = 2;
+        button1.Text = "Clear";
+        button1.UseVisualStyleBackColor = true;
+        button1.Click += button1_Click;
+        // 
         // textBox1
         // 
         textBox1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         textBox1.Location = new Point(3, 508);
         textBox1.Name = "textBox1";
         textBox1.PlaceholderText = "Regexp filter";
-        textBox1.Size = new Size(257, 23);
+        textBox1.Size = new Size(207, 23);
         textBox1.TabIndex = 1;
         textBox1.TextChanged += textBox1_TextChanged;
         // 
@@ -386,4 +400,5 @@ partial class Form1
     private ToolStripMenuItem v1ToolStripMenuItem;
     private ToolStripMenuItem v3ToolStripMenuItem;
     private SaveFileDialog saveFileDialog1;
+    private Button button1;
 }

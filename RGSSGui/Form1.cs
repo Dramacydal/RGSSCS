@@ -54,7 +54,7 @@ public partial class Form1 : Form
             title += $" - {path}";
 
         Text = title;
-            
+
         toolStripStatusLabel1.Text = _reader != null ? $"Total files: {_reader.Table.Size}" : "";
         _previewCallback = null;
         SetupInfo(null);
@@ -275,7 +275,7 @@ public partial class Form1 : Form
                         {
                             if (aborted)
                                 break;
-                                
+
                             me.Invoke(() => me.SetProgress(++index, files.Length, entry.Path));
                             _reader.Extract(entry, path);
                         }
@@ -319,7 +319,6 @@ public partial class Form1 : Form
     private void DoWithProgress(Action<ProgressForm> action, Action abortAction)
     {
         var progressForm = new ProgressForm(action, abortAction);
-        progressForm.StartPosition = FormStartPosition.CenterParent;
 
         progressForm.ShowDialog(this);
     }
@@ -352,9 +351,9 @@ public partial class Form1 : Form
 
                 if (aborted)
                     return;
-                    
+
                 Invoke(CloseArchive);
-                    
+
                 File.Move(tmpPath, path, true);
 
                 Invoke(() => ReadArchive(path));
@@ -364,10 +363,20 @@ public partial class Form1 : Form
                 MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
-        }, () => aborted=true);
+        }, () => aborted = true);
     }
 
     private void v1ToolStripMenuItem_Click(object sender, EventArgs e) => CreateArchive(ArchiveVersion.V1);
 
     private void v3ToolStripMenuItem_Click(object sender, EventArgs e) => CreateArchive(ArchiveVersion.V3);
+
+    private void button1_Click(object sender, EventArgs e)
+    {
+        textBox1.Text = "";
+    }
+
+    private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+    {
+        new AboutForm().ShowDialog(this);
+    }
 }

@@ -51,7 +51,6 @@ partial class ProgressForm
         label1.Name = "label1";
         label1.Size = new Size(343, 23);
         label1.TabIndex = 1;
-        label1.Text = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz";
         label1.TextAlign = ContentAlignment.MiddleCenter;
         // 
         // label3
@@ -61,7 +60,6 @@ partial class ProgressForm
         label3.Name = "label3";
         label3.Size = new Size(343, 23);
         label3.TabIndex = 1;
-        label3.Text = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz";
         label3.TextAlign = ContentAlignment.MiddleCenter;
         // 
         // button1
@@ -85,6 +83,7 @@ partial class ProgressForm
         Controls.Add(label1);
         Controls.Add(progressBar1);
         Name = "ProgressForm";
+        StartPosition = FormStartPosition.CenterParent;
         Text = "Please wait...";
         Shown += ProgressForm_Shown;
         ResumeLayout(false);
