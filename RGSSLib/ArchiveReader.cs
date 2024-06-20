@@ -4,7 +4,7 @@ using RGSSLib.V3;
 
 namespace RGSSLib;
 
-public abstract class ArchiveReader
+public static class ArchiveReader
 {
     public static AbstractArchiveReader Open(string path)
     {

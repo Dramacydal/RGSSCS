@@ -10,20 +10,26 @@ public class RGSSv1Writer : AbstractArchiveWriter
     {
     }
 
-    protected override void EncryptFiles(IEnumerable<string> files, string basePath)
+    protected override void EncryptFiles(IEnumerable<string> files, string basePath, ProgressDelegate? progress = null)
     {
+        _aborted = false;
+        
         var rnd = KeyMagic;
 
-        List<Tuple<string, TableEntry>> entries = new();
-        List<Tuple<long, TableEntry>> offsetOffsets = new();
-
+        var total = files.Count();
+        var index = 0;
         foreach (var file in files)
         {
+            if (_aborted)
+                break;
+            
             var entry = MakeEntry(file, basePath);
 
             WriteString(entry.Path, ref rnd);
             WriteInt(entry.Size, ref rnd);
             WriteFileContent(File.ReadAllBytes(file), rnd);
+
+            progress?.Invoke(++index, total, entry.Path);
         }
     }
 

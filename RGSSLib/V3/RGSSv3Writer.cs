@@ -8,8 +8,9 @@ public class RGSSv3Writer : AbstractArchiveWriter
     {
     }
 
-    protected override void EncryptFiles(IEnumerable<string> files, string basePath)
+    protected override void EncryptFiles(IEnumerable<string> files, string basePath, ProgressDelegate? progress = null)
     {
+        _aborted = false;
         var rand = new Random((int)DateTimeOffset.UtcNow.ToUnixTimeSeconds());
             
         var seed = (uint)rand.Next();
@@ -23,6 +24,9 @@ public class RGSSv3Writer : AbstractArchiveWriter
 
         foreach (var file in files)
         {
+            if (_aborted)
+                return;
+
             var entry = MakeEntry(file, basePath);
 
             offsetOffsets.Add(new(writer.BaseStream.Position, entry));
@@ -40,12 +44,22 @@ public class RGSSv3Writer : AbstractArchiveWriter
 
         var dataStartOffset = writer.BaseStream.Position;
 
+        var index = 0;
         foreach (var (file, entry) in entries)
+        {
+            if (_aborted)
+                return;
+
+            progress?.Invoke(++index, entries.Count, entry.Path);
             WriteFileContent(File.ReadAllBytes(file), entry.Key);
+        }
 
         var dataOffset = 0;
         foreach (var (offset, entry) in offsetOffsets)
         {
+            if (_aborted)
+                break;
+            
             writer.BaseStream.Seek(offset, SeekOrigin.Begin);
 
             WriteInt((int)dataStartOffset + dataOffset, ref seed);
@@ -57,7 +71,7 @@ public class RGSSv3Writer : AbstractArchiveWriter
     {
         var bytes = Encoding.UTF8.GetBytes(value);
         
-        writer.Write(EncryptInt(bytes.Length, ref key));
+        WriteInt(bytes.Length, ref key);
 
         for (var i = 0; i < bytes.Length; ++i)
             bytes[i] ^= (byte)((key >> 8 * i) & 0xFF);
