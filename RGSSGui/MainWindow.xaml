@@ -45,10 +45,15 @@
                 </Grid.RowDefinitions>
 
                 <local:MultiSelectTreeView x:Name="treeView" Grid.Row="0"
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling"
+                          ScrollViewer.CanContentScroll="True"
                           PreviewMouseLeftButtonDown="TreeView_PreviewMouseLeftButtonDown"
                           SelectedItemChanged="TreeView_SelectedItemChanged">
                     <local:MultiSelectTreeView.ItemContainerStyle>
                         <Style TargetType="{x:Type local:MultiSelectTreeViewItem}">
+                            <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True"/>
+                            <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling"/>
                             <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
                             <EventSetter Event="PreviewMouseRightButtonDown" Handler="TreeViewItem_PreviewMouseRightButtonDown"/>
                             <Style.Triggers>
