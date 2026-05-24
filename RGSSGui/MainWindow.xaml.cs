@@ -21,6 +21,7 @@ public partial class MainWindow : Window
     private Action? _previewCallback;
     private Regex? _regexpFilter;
     private readonly DispatcherTimer _filterTimer;
+    private bool _suppressFilterUpdate;
     private readonly ObservableCollection<TreeNodeModel> _rootNodes = new();
     private double _zoom = 1.0;
     private string _previewBaseInfo = "";
@@ -166,7 +167,9 @@ public partial class MainWindow : Window
     {
         if (isFile && _regexpFilter != null)
         {
-            if (!_regexpFilter.IsMatch(Path.GetFileName(path)))
+            bool matches = _regexpFilter.IsMatch(Path.GetFileName(path));
+            bool inverted = invertFilterCheckBox.IsChecked == true;
+            if (matches == inverted)
                 return null;
         }
 
@@ -472,6 +475,7 @@ public partial class MainWindow : Window
 
     private void FilterTextBox_TextChanged(object sender, TextChangedEventArgs e)
     {
+        if (_suppressFilterUpdate) return;
         _filterTimer.Stop();
         _regexpFilter = null;
         try
@@ -482,9 +486,32 @@ public partial class MainWindow : Window
         _filterTimer.Start();
     }
 
-    private void ClearFilter_Click(object sender, RoutedEventArgs e)
+    private void InvertFilter_Changed(object sender, RoutedEventArgs e)
     {
-        filterTextBox.Text = "";
+        if (_suppressFilterUpdate) return;
+        if (_regexpFilter != null)
+        {
+            SetupTree();
+            ExpandAll();
+        }
+    }
+
+    private void ResetFilter_Click(object sender, RoutedEventArgs e)
+    {
+        _suppressFilterUpdate = true;
+        try
+        {
+            _filterTimer.Stop();
+            invertFilterCheckBox.IsChecked = false;
+            filterTextBox.Text = "";
+            _regexpFilter = null;
+        }
+        finally
+        {
+            _suppressFilterUpdate = false;
+        }
+        SetupTree();
+        ExpandAll();
     }
 
     private void ExpandAll() => SetExpandedAll(true);

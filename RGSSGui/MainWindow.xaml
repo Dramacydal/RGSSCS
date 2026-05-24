@@ -85,6 +85,7 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <Grid Grid.Column="0">
                         <TextBox x:Name="filterTextBox" TextChanged="FilterTextBox_TextChanged"/>
@@ -102,7 +103,10 @@
                             </TextBlock.Style>
                         </TextBlock>
                     </Grid>
-                    <Button Grid.Column="1" Content="Clear" Width="42" Margin="3,0,0,0" Click="ClearFilter_Click"/>
+                    <CheckBox x:Name="invertFilterCheckBox" Grid.Column="1" Content="Not"
+                              VerticalAlignment="Center" Margin="4,0,0,0"
+                              Checked="InvertFilter_Changed" Unchecked="InvertFilter_Changed"/>
+                    <Button Grid.Column="2" Content="Reset" Width="42" Margin="3,0,0,0" Click="ResetFilter_Click"/>
                 </Grid>
             </Grid>
 
