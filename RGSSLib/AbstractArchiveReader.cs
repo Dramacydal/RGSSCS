@@ -76,31 +76,16 @@ public abstract class AbstractArchiveReader : IDisposable
         }
     }
 
-    private HashSet<string> cachedDirectories = new();
-
-    private bool DirectoryExists(string path)
-    {
-        if (cachedDirectories.Contains(path))
-            return true;
-
-        var res = Directory.Exists(path);
-        if (res)
-            cachedDirectories.Add(path);
-
-        return res;
-    }
-
     public void Extract(TableEntry entry, string path)
     {
-        if (!DirectoryExists(path))
+        if (!Directory.Exists(path))
             throw new Exception($"Directory '{path}' does not exist");
 
         var directory = Path.GetDirectoryName(entry.Path);
         if (!string.IsNullOrEmpty(directory))
             path = Path.Combine(path, directory);
 
-        if (!DirectoryExists(path))
-            Directory.CreateDirectory(path);
+        Directory.CreateDirectory(path);
 
         File.WriteAllBytes(Path.Combine(path, Path.GetFileName(entry.Path)), GetFileContent(entry).ToArray());
     }

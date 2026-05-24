@@ -6,6 +6,7 @@ namespace RGSSGui;
 public class TreeNodeModel : INotifyPropertyChanged
 {
     private bool _isExpanded;
+    private bool _isSelected;
 
     public string Text { get; set; } = "";
     public string Path { get; set; } = "";
@@ -20,6 +21,17 @@ public class TreeNodeModel : INotifyPropertyChanged
             if (_isExpanded == value) return;
             _isExpanded = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsExpanded)));
+        }
+    }
+
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            if (_isSelected == value) return;
+            _isSelected = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));
         }
     }
 

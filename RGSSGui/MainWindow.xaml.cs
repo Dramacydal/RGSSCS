@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -25,6 +26,8 @@ public partial class MainWindow : Window
     private Point _panStart;
     private Vector _panScrollStart;
     private bool _isPanning;
+    private TreeNodeModel? _anchorNode;
+    private bool _suppressSelectedItemChanged;
     private List<string> _recentFiles = new();
 
     private static string RecentFilesPath => Path.Combine(
@@ -142,6 +145,7 @@ public partial class MainWindow : Window
     private void SetupTree()
     {
         _rootNodes.Clear();
+        _anchorNode = null;
         if (_reader == null)
             return;
 
@@ -350,15 +354,115 @@ public partial class MainWindow : Window
             _previewCallback?.Invoke();
     }
 
+    // Keyboard navigation: revert to single-select and sync model state
     private void TreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
     {
-        SetupInfo(e.NewValue as TreeNodeModel);
+        if (_suppressSelectedItemChanged) return;
+        var node = e.NewValue as TreeNodeModel;
+        ClearSelection();
+        if (node != null) { node.IsSelected = true; _anchorNode = node; }
+        SetupInfo(node);
+    }
+
+    private void TreeView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        // Let expander toggle pass through untouched
+        if (HasAncestorOfType<ToggleButton>(e.OriginalSource as DependencyObject))
+            return;
+
+        var item = FindAncestor<TreeViewItem>(e.OriginalSource as DependencyObject);
+        if (item?.DataContext is not TreeNodeModel node) return;
+
+        var ctrl  = (Keyboard.Modifiers & ModifierKeys.Control) != 0;
+        var shift = (Keyboard.Modifiers & ModifierKeys.Shift)   != 0;
+
+        if (ctrl)
+        {
+            node.IsSelected = !node.IsSelected;
+            if (node.IsSelected) _anchorNode = node;
+        }
+        else if (shift && _anchorNode != null)
+        {
+            SelectRange(_anchorNode, node);
+        }
+        else
+        {
+            ClearSelection();
+            node.IsSelected = true;
+            _anchorNode = node;
+        }
+
+        _suppressSelectedItemChanged = true;
+        SetupInfo(node);
+        _suppressSelectedItemChanged = false;
+        e.Handled = true;
     }
 
     private void TreeViewItem_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (sender is TreeViewItem item)
-            item.IsSelected = true;
+        // Don't change selection on right-click — context menu operates on current selection.
+        // Open the TreeView's context menu manually since we consume the event.
+        if (treeView.ContextMenu != null)
+        {
+            treeView.ContextMenu.PlacementTarget = treeView;
+            treeView.ContextMenu.IsOpen = true;
+        }
+        e.Handled = true;
+    }
+
+    // ── selection helpers ────────────────────────────────────────────────────
+
+    private IEnumerable<TreeNodeModel> GetAllNodes()
+    {
+        var stack = new Stack<TreeNodeModel>(_rootNodes);
+        while (stack.Count > 0)
+        {
+            var n = stack.Pop();
+            yield return n;
+            foreach (var child in n.Children) stack.Push(child);
+        }
+    }
+
+    private List<TreeNodeModel> GetVisibleNodes()
+    {
+        var list = new List<TreeNodeModel>();
+        foreach (var root in _rootNodes) CollectVisible(root, list);
+        return list;
+    }
+
+    private static void CollectVisible(TreeNodeModel node, List<TreeNodeModel> list)
+    {
+        list.Add(node);
+        if (node.IsExpanded)
+            foreach (var child in node.Children) CollectVisible(child, list);
+    }
+
+    private void ClearSelection()
+    {
+        foreach (var n in GetAllNodes()) n.IsSelected = false;
+    }
+
+    private void SelectRange(TreeNodeModel from, TreeNodeModel to)
+    {
+        var visible = GetVisibleNodes();
+        var a = visible.IndexOf(from);
+        var b = visible.IndexOf(to);
+        if (a < 0 || b < 0) return;
+        ClearSelection();
+        for (var i = Math.Min(a, b); i <= Math.Max(a, b); i++)
+            visible[i].IsSelected = true;
+    }
+
+    private static T? FindAncestor<T>(DependencyObject? d) where T : DependencyObject
+    {
+        while (d != null) { if (d is T t) return t; d = VisualTreeHelper.GetParent(d); }
+        return null;
+    }
+
+    private static bool HasAncestorOfType<T>(DependencyObject? d) where T : DependencyObject
+    {
+        while (d != null) { if (d is T) return true; d = VisualTreeHelper.GetParent(d); }
+        return false;
     }
 
     private void FilterTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -399,57 +503,109 @@ public partial class MainWindow : Window
         UpdateView();
     }
 
+    private TableEntry[] GetSelectedEntries()
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var result = new List<TableEntry>();
+        foreach (var node in GetAllNodes().Where(n => n.IsSelected))
+        {
+            if (node.IsFile)
+            {
+                var entry = _reader!.Table.GetEntry(node.Path);
+                if (entry != null && seen.Add(entry.Path)) result.Add(entry);
+            }
+            else
+            {
+                foreach (var entry in _reader!.Table.GetEntriesInPath(node.Path))
+                    if (seen.Add(entry.Path)) result.Add(entry);
+            }
+        }
+        return result.ToArray();
+    }
+
     private void ExtractSelected_Click(object sender, RoutedEventArgs e)
     {
-        var selectedNode = treeView.SelectedItem as TreeNodeModel;
-        if (selectedNode == null)
-            return;
-
         var folderDlg = new OpenFolderDialog();
-        if (folderDlg.ShowDialog(this) != true)
-            return;
+        if (folderDlg.ShowDialog(this) != true) return;
 
-        var path = folderDlg.FolderName;
+        var destPath = folderDlg.FolderName;
+        var entries = GetSelectedEntries();
+        if (entries.Length == 0) return;
 
-        if (selectedNode.IsFile)
+        if (entries.Length == 1)
         {
+            try { _reader!.Extract(entries[0], destPath); }
+            catch (Exception ex)
+            { MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+            return;
+        }
+
+        var aborted = false;
+        DoWithProgress(me =>
+        {
+            var index = 0;
             try
             {
-                var entry = _reader!.Table.GetEntry(selectedNode.Path);
-                if (entry == null) return;
-                _reader.Extract(entry, path);
+                foreach (var entry in entries)
+                {
+                    if (aborted) break;
+                    me.Invoke(() => me.SetProgress(++index, entries.Length, entry.Path));
+                    _reader!.Extract(entry, destPath);
+                }
+                me.Invoke(me.Close);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Dispatcher.Invoke(() =>
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error));
             }
-        }
-        else
-        {
-            var files = _reader!.Table.GetEntriesInPath(selectedNode.Path).ToArray();
-            if (files.Length == 0) return;
+        }, () => aborted = true);
+    }
 
-            var aborted = false;
-            DoWithProgress(me =>
+    private void ExtractSelectedFlat_Click(object sender, RoutedEventArgs e)
+    {
+        var folderDlg = new OpenFolderDialog();
+        if (folderDlg.ShowDialog(this) != true) return;
+
+        var destPath = folderDlg.FolderName;
+        var entries = GetSelectedEntries();
+        if (entries.Length == 0) return;
+
+        if (entries.Length == 1)
+        {
+            try
             {
-                var index = 0;
-                try
-                {
-                    foreach (var entry in files)
-                    {
-                        if (aborted) break;
-                        me.Invoke(() => me.SetProgress(++index, files.Length, entry.Path));
-                        _reader.Extract(entry, path);
-                    }
-                    me.Invoke(me.Close);
-                }
-                catch (Exception ex)
-                {
-                    Dispatcher.Invoke(() =>
-                        MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error));
-                }
-            }, () => aborted = true);
+                File.WriteAllBytes(
+                    Path.Combine(destPath, Path.GetFileName(entries[0].Path)),
+                    _reader!.GetFileContent(entries[0]).ToArray());
+            }
+            catch (Exception ex)
+            { MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error); }
+            return;
         }
+
+        var aborted = false;
+        DoWithProgress(me =>
+        {
+            var index = 0;
+            try
+            {
+                foreach (var entry in entries)
+                {
+                    if (aborted) break;
+                    me.Invoke(() => me.SetProgress(++index, entries.Length, entry.Path));
+                    File.WriteAllBytes(
+                        Path.Combine(destPath, Path.GetFileName(entry.Path)),
+                        _reader!.GetFileContent(entry).ToArray());
+                }
+                me.Invoke(me.Close);
+            }
+            catch (Exception ex)
+            {
+                Dispatcher.Invoke(() =>
+                    MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error));
+            }
+        }, () => aborted = true);
     }
 
     private void ExtractAll_Click(object sender, RoutedEventArgs e)
