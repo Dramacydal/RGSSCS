@@ -2,6 +2,7 @@ using Microsoft.Win32;
 using RGSSLib;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -49,6 +50,10 @@ public partial class MainWindow : Window
         };
         LoadRecentFiles();
         RebuildRecentMenu();
+
+        var args = Environment.GetCommandLineArgs();
+        if (args.Length > 1 && File.Exists(args[1]))
+            Loaded += (s, e) => ReadArchive(args[1]);
     }
 
     private void LoadRecentFiles()
@@ -655,12 +660,12 @@ public partial class MainWindow : Window
         var aborted = false;
         DoWithProgress(me =>
         {
+            var outPath = saveDlg.FileName;
+            var tmpPath = outPath + ".tmp";
             try
             {
-                var outPath = saveDlg.FileName;
-                var tmpPath = outPath + ".tmp";
                 ArchiveWriter.Encrypt(inputFolder, tmpPath, version, (index, total, s) =>
-                    me.Invoke(() => me.SetProgress(index, total, s)));
+                    me.Invoke(() => me.SetProgress(index, total, s)), tmpPath);
 
                 me.Invoke(me.Close);
                 if (aborted) return;
@@ -671,6 +676,7 @@ public partial class MainWindow : Window
             }
             catch (Exception ex)
             {
+                if (File.Exists(tmpPath)) try { File.Delete(tmpPath); } catch { }
                 Dispatcher.Invoke(() =>
                     MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error));
             }
@@ -685,5 +691,40 @@ public partial class MainWindow : Window
     private void About_Click(object sender, RoutedEventArgs e)
     {
         new AboutWindow { Owner = this }.ShowDialog();
+    }
+
+    [DllImport("shell32.dll")]
+    private static extern void SHChangeNotify(int wEventId, uint uFlags, nint dwItem1, nint dwItem2);
+
+    private void RegisterFileAssociations_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var exePath = Environment.ProcessPath ?? System.Diagnostics.Process.GetCurrentProcess().MainModule!.FileName!;
+            const string progId = "RGSSGui.Archive";
+
+            using (var cls = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{progId}"))
+            {
+                cls.SetValue("", "RGSS Archive");
+                using var icon = cls.CreateSubKey("DefaultIcon");
+                icon.SetValue("", $"\"{exePath}\",0");
+                using var cmd = cls.CreateSubKey(@"shell\open\command");
+                cmd.SetValue("", $"\"{exePath}\" \"%1\"");
+            }
+
+            string[] extensions = [".rgss3a", ".rgss2a", ".rgssad"];
+            foreach (var ext in extensions)
+            {
+                using var key = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{ext}");
+                key.SetValue("", progId);
+            }
+
+            SHChangeNotify(0x08000000, 0x0000, nint.Zero, nint.Zero);
+            MessageBox.Show("File associations registered successfully.", "Done", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to register file associations:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 }
