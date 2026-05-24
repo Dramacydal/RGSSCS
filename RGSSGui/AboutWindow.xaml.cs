@@ -9,6 +9,8 @@ public partial class AboutWindow : Window
     public AboutWindow()
     {
         InitializeComponent();
+        var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(2) ?? "?";
+        versionLabel.Text = $"RGSSGui {version}";
     }
 
     private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)

@@ -32,6 +32,9 @@ public partial class MainWindow : Window
     private bool _suppressSelectedItemChanged;
     private List<string> _recentFiles = new();
 
+    private static string AppVersion =>
+        System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(2) ?? "?";
+
     private static string RecentFilesPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "RGSSGui", "recent.json");
@@ -139,7 +142,7 @@ public partial class MainWindow : Window
 
     private void UpdateView(string path = "")
     {
-        Title = string.IsNullOrEmpty(path) ? "RGSSGui" : $"RGSSGui - {path}";
+        Title = string.IsNullOrEmpty(path) ? $"RGSSGui {AppVersion}" : $"RGSSGui {AppVersion} - {path}";
         statusLabel.Text = _reader != null ? $"Total files: {_reader.Table.Size}" : "";
         _previewCallback = null;
         SetupInfo(null);
