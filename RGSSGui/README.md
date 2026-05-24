@@ -34,7 +34,7 @@ RGSSGui.exe "C:\Games\RPGMakerGame\Game.rgss3a"
 
 The left panel shows the archive contents as a hierarchical tree. Folders can be expanded and collapsed individually or all at once via the context menu.
 
-**Filtering:** type a regular expression into the search box at the bottom of the left panel. The tree updates automatically after a short delay.
+**Filtering:** type a regular expression into the search box at the bottom of the left panel. The tree updates automatically after a short delay. Check the **Not** checkbox to invert the filter and show only files that do *not* match the expression. The **Reset** button clears both the expression and the invert checkbox in one step.
 
 ## Selecting Files
 
