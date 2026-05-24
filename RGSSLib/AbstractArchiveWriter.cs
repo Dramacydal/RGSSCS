@@ -40,7 +40,7 @@ public abstract class AbstractArchiveWriter
         }
     }
 
-    public int EncryptDirectory(string path, ProgressDelegate? progress = null)
+    public int EncryptDirectory(string path, ProgressDelegate? progress = null, string? excludeFile = null)
     {
         if (!Directory.Exists(path))
             throw new Exception($"Source path '{path}' does not exist");
@@ -48,8 +48,12 @@ public abstract class AbstractArchiveWriter
         writer.Write(Encoding.ASCII.GetBytes(ArchiveReader.HeaderMagic));
         writer.Write((byte)0);
         writer.Write((byte)_version);
-        
-        var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories).OrderBy(_ => _, new PathComparer()).ToArray();
+
+        var excludeFull = excludeFile != null ? Path.GetFullPath(excludeFile) : null;
+        var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories)
+            .Where(f => excludeFull == null ||
+                        !string.Equals(Path.GetFullPath(f), excludeFull, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(_ => _, new PathComparer()).ToArray();
 
         EncryptFiles(files, path, progress);
 
