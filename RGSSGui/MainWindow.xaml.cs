@@ -2,10 +2,12 @@ using Microsoft.Win32;
 using RGSSLib;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
@@ -18,6 +20,18 @@ public partial class MainWindow : Window
     private Regex? _regexpFilter;
     private readonly DispatcherTimer _filterTimer;
     private readonly ObservableCollection<TreeNodeModel> _rootNodes = new();
+    private double _zoom = 1.0;
+    private string _previewBaseInfo = "";
+    private Point _panStart;
+    private Vector _panScrollStart;
+    private bool _isPanning;
+    private List<string> _recentFiles = new();
+
+    private static string RecentFilesPath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "RGSSGui", "recent.json");
+
+    private const int MaxRecentFiles = 10;
 
     public MainWindow()
     {
@@ -30,6 +44,62 @@ public partial class MainWindow : Window
             SetupTree();
             ExpandAll();
         };
+        LoadRecentFiles();
+        RebuildRecentMenu();
+    }
+
+    private void LoadRecentFiles()
+    {
+        try
+        {
+            if (File.Exists(RecentFilesPath))
+                _recentFiles = JsonSerializer.Deserialize<List<string>>(File.ReadAllText(RecentFilesPath)) ?? new();
+        }
+        catch { _recentFiles = new(); }
+    }
+
+    private void SaveRecentFiles()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(RecentFilesPath)!);
+            File.WriteAllText(RecentFilesPath, JsonSerializer.Serialize(_recentFiles));
+        }
+        catch { }
+    }
+
+    private void AddToRecent(string path)
+    {
+        _recentFiles.Remove(path);
+        _recentFiles.Insert(0, path);
+        if (_recentFiles.Count > MaxRecentFiles)
+            _recentFiles.RemoveRange(MaxRecentFiles, _recentFiles.Count - MaxRecentFiles);
+        SaveRecentFiles();
+        RebuildRecentMenu();
+    }
+
+    private void RebuildRecentMenu()
+    {
+        openRecentMenuItem.Items.Clear();
+        foreach (var path in _recentFiles)
+        {
+            var item = new MenuItem { Header = path };
+            item.Click += (_, _) => ReadArchive(path);
+            openRecentMenuItem.Items.Add(item);
+        }
+        if (_recentFiles.Count > 0)
+        {
+            openRecentMenuItem.Items.Add(new Separator());
+            var clearItem = new MenuItem { Header = "Clear recent" };
+            clearItem.Click += (_, _) =>
+            {
+                _recentFiles.Clear();
+                SaveRecentFiles();
+                RebuildRecentMenu();
+            };
+            openRecentMenuItem.Items.Add(clearItem);
+        }
+        openRecentMenuItem.IsEnabled = _recentFiles.Count > 0;
     }
 
     private void OpenArchive_Click(object sender, RoutedEventArgs e)
@@ -54,6 +124,7 @@ public partial class MainWindow : Window
             MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
+        AddToRecent(path);
         UpdateView(path);
     }
 
@@ -128,13 +199,103 @@ public partial class MainWindow : Window
         }
 
         previewImage.Source = null;
+        previewImage.LayoutTransform = null;
+        previewImage.Cursor = null;
+        _previewBaseInfo = "";
+        _zoom = 1.0;
+        _isPanning = false;
+        previewInfoLabel.Text = "";
         pathTextBox.Text = "";
         sizeTextBox.Text = "";
+    }
+
+    private void SetPreviewInfo(string path, int w, int h)
+    {
+        _previewBaseInfo = $"{path}  {w} × {h}";
+        UpdatePreviewInfoLabel();
+    }
+
+    private void UpdatePreviewInfoLabel()
+    {
+        previewInfoLabel.Text = string.IsNullOrEmpty(_previewBaseInfo)
+            ? ""
+            : $"{_previewBaseInfo}  {_zoom * 100:F0}%";
+    }
+
+    private void SetZoom(double zoom, Point? anchor = null)
+    {
+        var oldZoom = _zoom;
+        _zoom = Math.Clamp(zoom, 0.05, 20.0);
+        if (Math.Abs(_zoom - 1.0) < 0.02) _zoom = 1.0;
+
+        double? newScrollX = null, newScrollY = null;
+        if (anchor.HasValue)
+        {
+            var scale = _zoom / oldZoom;
+            newScrollX = (previewScrollViewer.HorizontalOffset + anchor.Value.X) * scale - anchor.Value.X;
+            newScrollY = (previewScrollViewer.VerticalOffset + anchor.Value.Y) * scale - anchor.Value.Y;
+        }
+
+        previewImage.LayoutTransform = new ScaleTransform(_zoom, _zoom);
+        UpdatePreviewInfoLabel();
+
+        if (newScrollX.HasValue)
+        {
+            previewScrollViewer.UpdateLayout();
+            previewScrollViewer.ScrollToHorizontalOffset(newScrollX.Value);
+            previewScrollViewer.ScrollToVerticalOffset(newScrollY!.Value);
+        }
+    }
+
+    private void PreviewScrollViewer_MouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (previewImage.Source == null) return;
+        e.Handled = true;
+        SetZoom(_zoom * (e.Delta > 0 ? 1.1 : 1.0 / 1.1), e.GetPosition(previewScrollViewer));
+    }
+
+    private void PreviewImage_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2)
+        {
+            _isPanning = false;
+            previewImage.ReleaseMouseCapture();
+            previewImage.Cursor = Cursors.Hand;
+            SetZoom(1.0);
+            return;
+        }
+        if (previewImage.Source == null) return;
+        _panStart = e.GetPosition(previewScrollViewer);
+        _panScrollStart = new Vector(previewScrollViewer.HorizontalOffset, previewScrollViewer.VerticalOffset);
+        _isPanning = true;
+        previewImage.CaptureMouse();
+        previewImage.Cursor = Cursors.SizeAll;
+        e.Handled = true;
+    }
+
+    private void PreviewImage_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isPanning) return;
+        var delta = e.GetPosition(previewScrollViewer) - _panStart;
+        previewScrollViewer.ScrollToHorizontalOffset(_panScrollStart.X - delta.X);
+        previewScrollViewer.ScrollToVerticalOffset(_panScrollStart.Y - delta.Y);
+    }
+
+    private void PreviewImage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (!_isPanning) return;
+        _isPanning = false;
+        previewImage.ReleaseMouseCapture();
+        previewImage.Cursor = Cursors.Hand;
     }
 
     private void DoPreview(TableEntry entry)
     {
         previewImage.Source = null;
+        _previewBaseInfo = "";
+        _zoom = 1.0;
+        previewImage.LayoutTransform = null;
+        previewInfoLabel.Text = "";
         var ext = Path.GetExtension(entry.Path).ToLower();
         if (ext is not (".jpg" or ".jpeg" or ".png" or ".gif" or ".bmp"))
             return;
@@ -148,17 +309,32 @@ public partial class MainWindow : Window
             try
             {
                 var stream = _reader!.GetFileStream(entry);
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.StreamSource = stream;
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.EndInit();
-                bitmap.Freeze();
-                previewImage.Source = bitmap;
+                var frame = BitmapDecoder.Create(stream,
+                    BitmapCreateOptions.PreservePixelFormat,
+                    BitmapCacheOption.OnLoad).Frames[0];
+
+                BitmapSource source;
+                if (Math.Abs(frame.DpiX - 96) > 0.5 || Math.Abs(frame.DpiY - 96) > 0.5)
+                {
+                    var stride = frame.PixelWidth * ((frame.Format.BitsPerPixel + 7) / 8);
+                    var pixels = new byte[frame.PixelHeight * stride];
+                    frame.CopyPixels(pixels, stride, 0);
+                    source = BitmapSource.Create(frame.PixelWidth, frame.PixelHeight,
+                        96, 96, frame.Format, frame.Palette, pixels, stride);
+                }
+                else
+                {
+                    source = frame;
+                }
+                source.Freeze();
+                previewImage.Source = source;
+                previewImage.Cursor = Cursors.Hand;
+                SetPreviewInfo(entry.Path, frame.PixelWidth, frame.PixelHeight);
             }
             catch
             {
                 previewImage.Source = null;
+                previewInfoLabel.Text = "";
             }
         };
 
@@ -208,7 +384,7 @@ public partial class MainWindow : Window
     private void SetExpandedAll(bool expanded)
     {
         foreach (var node in _rootNodes)
-            node.IsExpanded = expanded;
+            node.SetExpandedRecursive(expanded);
     }
 
     private void ExpandAll_Click(object sender, RoutedEventArgs e) => ExpandAll();

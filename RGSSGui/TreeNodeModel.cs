@@ -20,9 +20,14 @@ public class TreeNodeModel : INotifyPropertyChanged
             if (_isExpanded == value) return;
             _isExpanded = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsExpanded)));
-            foreach (var child in Children)
-                child.IsExpanded = value;
         }
+    }
+
+    public void SetExpandedRecursive(bool value)
+    {
+        IsExpanded = value;
+        foreach (var child in Children)
+            child.SetExpandedRecursive(value);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
